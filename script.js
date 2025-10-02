@@ -6,8 +6,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const copyBtn = document.getElementById("copyBtn");
     const bagOptionsDiv = document.querySelector(".bag-options");
     const toast = document.getElementById("toast");
+    const editModal = document.getElementById("editModal");
+    const editItemInput = document.getElementById("editItemInput");
+    const saveEditBtn = document.getElementById("saveEditBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
 
     let items = JSON.parse(localStorage.getItem("marketListItems")) || [];
+    let editingIndex = null;
 
     const initialItems = [
         "ไก่สด", "เล็บมือนาง", "ตีนไก่", "ปลาดุก", "กุ้งสด", "หมึกสด", "ปูม้า", "ปูดำ", "หอยเชอรี่",
@@ -42,7 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
             li.innerHTML = `
                 <input type="checkbox" id="item-${index}" ${item.checked ? "checked" : ""}>
                 <label for="item-${index}">${item.name}</label>
-                <button class="delete-btn" data-index="${index}">ลบ</button>
+                <div class="item-actions">
+                    <button class="edit-btn" data-index="${index}">แก้ไข</button>
+                    <button class="delete-btn" data-index="${index}">ลบ</button>
+                </div>
             `;
             shoppingList.appendChild(li);
         });
@@ -53,6 +61,27 @@ document.addEventListener("DOMContentLoaded", () => {
             items.push({ name: name.trim(), checked: false });
             saveItems();
             newItemInput.value = "";
+        }
+    }
+
+    function openEditModal(index) {
+        editingIndex = index;
+        editItemInput.value = items[index].name;
+        editModal.classList.add("show");
+        editItemInput.focus();
+    }
+
+    function closeEditModal() {
+        editModal.classList.remove("show");
+        editingIndex = null;
+        editItemInput.value = "";
+    }
+
+    function saveEdit() {
+        if (editingIndex !== null && editItemInput.value.trim() !== "") {
+            items[editingIndex].name = editItemInput.value.trim();
+            saveItems();
+            closeEditModal();
         }
     }
 
@@ -74,33 +103,81 @@ document.addEventListener("DOMContentLoaded", () => {
     shoppingList.addEventListener("click", (e) => {
         if (e.target.classList.contains("delete-btn")) {
             const index = e.target.dataset.index;
-            items.splice(index, 1);
-            saveItems();
+            if (confirm("คุณต้องการลบรายการนี้หรือไม่?")) {
+                items.splice(index, 1);
+                saveItems();
+            }
+        } else if (e.target.classList.contains("edit-btn")) {
+            const index = e.target.dataset.index;
+            openEditModal(index);
         }
     });
 
     resetBtn.addEventListener("click", () => {
-        items = items.map(item => ({ ...item, checked: false }));
-        saveItems();
+        if (confirm("คุณต้องการรีเซ็ตสถานะการเช็คทั้งหมดหรือไม่?")) {
+            items = items.map(item => ({ ...item, checked: false }));
+            saveItems();
+        }
     });
 
-    copyBtn.addEventListener("click", () => {
+    copyBtn.addEventListener("click", async () => {
         const checkedItems = items.filter(item => item.checked).map(item => item.name).join("\n");
         if (checkedItems) {
-            navigator.clipboard.writeText(checkedItems).then(() => {
-                showToast();
-            }).catch(err => {
-                console.error("Failed to copy: ", err);
-                alert("ไม่สามารถคัดลอกได้: " + err);
-            });
+            try {
+                // Try Web Share API first (for mobile)
+                if (navigator.share) {
+                    await navigator.share({
+                        title: "รายการซื้อของ",
+                        text: checkedItems
+                    });
+                    showToast("แชร์รายการเรียบร้อยแล้ว");
+                } else {
+                    // Fallback to clipboard
+                    await navigator.clipboard.writeText(checkedItems);
+                    showToast("คัดลอกไปยังคลิปบอร์ดแล้ว");
+                }
+            } catch (err) {
+                console.error("Failed to copy or share: ", err);
+                // Fallback method for older browsers
+                const textArea = document.createElement("textarea");
+                textArea.value = checkedItems;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand("copy");
+                    showToast("คัดลอกไปยังคลิปบอร์ดแล้ว");
+                } catch (e) {
+                    alert("ไม่สามารถคัดลอกได้: " + e);
+                }
+                document.body.removeChild(textArea);
+            }
         } else {
             alert("ไม่มีรายการที่ถูกเลือก");
         }
     });
 
-    function showToast() {
+    saveEditBtn.addEventListener("click", saveEdit);
+    cancelEditBtn.addEventListener("click", closeEditModal);
+    
+    editItemInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            saveEdit();
+        }
+    });
+
+    // Close modal when clicking outside
+    editModal.addEventListener("click", (e) => {
+        if (e.target === editModal) {
+            closeEditModal();
+        }
+    });
+
+    function showToast(message) {
+        toast.textContent = message;
         toast.className = "show";
-        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        setTimeout(() => { 
+            toast.className = toast.className.replace("show", ""); 
+        }, 3000);
     }
 
     // Bag options
@@ -115,6 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
         button.textContent = bag;
         button.addEventListener("click", () => {
             addItem(bag);
+            showToast(`เพิ่ม "${bag}" แล้ว`);
         });
         bagOptionsDiv.appendChild(button);
     });

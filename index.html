@@ -8,24 +8,39 @@
 </head>
 <body>
     <div class="container">
-        <h1>MarketList</h1>
+        <h1>🛒 MarketList</h1>
         <div class="add-item">
             <input type="text" id="newItemInput" placeholder="เพิ่มรายการใหม่...">
-            <button id="addItemBtn">เพิ่ม</button>
+            <button id="addItemBtn" class="btn-add">เพิ่ม</button>
         </div>
         <ul id="shoppingList">
             <!-- รายการจะถูกเพิ่มที่นี่ด้วย JavaScript -->
         </ul>
         <div class="controls">
-            <button id="resetBtn">รีเซ็ตสถานะ</button>
-            <button id="copyBtn">คัดลอกรายการที่เลือก</button>
+            <button id="resetBtn" class="btn-reset">รีเซ็ตสถานะ</button>
+            <button id="copyBtn" class="btn-copy">คัดลอกรายการที่เลือก</button>
         </div>
         <h2>ขนาดถุง</h2>
         <div class="bag-options">
             <!-- ตัวเลือกถุงจะถูกเพิ่มที่นี่ด้วย JavaScript -->
         </div>
     </div>
+
+    <!-- Modal for editing items -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2>แก้ไขรายการ</h2>
+            <input type="text" id="editItemInput" placeholder="ชื่อรายการ">
+            <div class="modal-buttons">
+                <button id="saveEditBtn" class="btn-save">บันทึก</button>
+                <button id="cancelEditBtn" class="btn-cancel">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
     <div id="toast">คัดลอกไปยังคลิปบอร์ดแล้ว</div>
+
     <script src="script.js"></script>
 </body>
 </html>
