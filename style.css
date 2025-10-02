@@ -195,32 +195,62 @@ h2 {
 
 .bag-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     gap: 12px;
     margin-top: 15px;
+    margin-bottom: 20px;
 }
 
-.bag-btn {
-    padding: 14px 10px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    background-color: #f8f9fa;
+.bag-option {
+    position: relative;
+}
+
+.bag-option input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.bag-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 12px;
+    border: 3px solid #e0e0e0;
+    border-radius: 10px;
+    background-color: #ffffff;
     cursor: pointer;
     text-align: center;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
-    transition: all 0.3s;
+    color: #333;
+    transition: all 0.3s ease;
+    min-height: 60px;
+    user-select: none;
 }
 
-.bag-btn:hover {
-    background-color: #667eea;
+.bag-card:hover {
+    border-color: #667eea;
+    background-color: #f0f3ff;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.bag-option input[type="checkbox"]:checked + .bag-card {
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     border-color: #667eea;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.bag-btn:active {
+.bag-option input[type="checkbox"]:checked + .bag-card::before {
+    content: "✓ ";
+    font-weight: bold;
+    margin-right: 4px;
+}
+
+.bag-card:active {
     transform: translateY(0);
 }
 

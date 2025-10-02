@@ -4,7 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const shoppingList = document.getElementById("shoppingList");
     const resetBtn = document.getElementById("resetBtn");
     const copyBtn = document.getElementById("copyBtn");
-    const bagOptionsDiv = document.querySelector(".bag-options");
+    const bagHiwOptionsDiv = document.getElementById("bagHiwOptions");
+    const bagHotOptionsDiv = document.getElementById("bagHotOptions");
     const toast = document.getElementById("toast");
     const editModal = document.getElementById("editModal");
     const editItemInput = document.getElementById("editItemInput");
@@ -12,12 +13,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const cancelEditBtn = document.getElementById("cancelEditBtn");
 
     let items = JSON.parse(localStorage.getItem("marketListItems")) || [];
+    let selectedBags = JSON.parse(localStorage.getItem("marketListSelectedBags")) || [];
     let editingIndex = null;
 
     const initialItems = [
         "ไก่สด", "เล็บมือนาง", "ตีนไก่", "ปลาดุก", "กุ้งสด", "หมึกสด", "ปูม้า", "ปูดำ", "หอยเชอรี่",
-        "สีผสมอาหาร", "ถุงหิ้ว 12*20", "ถุงหิ้ว 8*16", "ถุงหิ้ว 7*15", "ถุงร้อน 14*12", "ถุงร้อน 3*5",
-        "ถุงร้อน 4/5*7", "ถุงร้อน 6*11", "ถั่วลิสง", "กุ้งแห้ง", "กระเทียมเล็ก", "กระเทียมใหญ่",
+        "สีผสมอาหาร", "ถั่วลิสง", "กุ้งแห้ง", "กระเทียมเล็ก", "กระเทียมใหญ่",
         "กล่องใส่ไก่", "น้ำมะนาว", "น้ำกระเทียมดอง", "น้ำมันหอย", "น้ำมันพืช", "ซอสพริก",
         "ซอสฝาเขียว", "เกลือ", "พริกไทยดำ", "หอยดอง", "กะปิแท้", "น้ำตามะพร้าว", "น้ำตาลปี๊บ",
         "พริกแห้ง", "หอมแขก", "ไม้เสียบปลาดุก", "ถ้วยโฟม", "ช้อนส้อมพลาสติก", "เส้นเล็ก",
@@ -30,13 +31,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Add initial items if the list is empty
     if (items.length === 0) {
-        items = initialItems.map(item => ({ name: item, checked: false }));
+        items = initialItems.map(item => ({ name: item, checked: false, isBag: false }));
         saveItems();
     }
 
     function saveItems() {
         localStorage.setItem("marketListItems", JSON.stringify(items));
         renderItems();
+    }
+
+    function saveSelectedBags() {
+        localStorage.setItem("marketListSelectedBags", JSON.stringify(selectedBags));
     }
 
     function renderItems() {
@@ -56,11 +61,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function addItem(name) {
+    function addItem(name, isBag = false) {
         if (name.trim() !== "") {
-            items.push({ name: name.trim(), checked: false });
+            items.push({ name: name.trim(), checked: false, isBag: isBag });
             saveItems();
             newItemInput.value = "";
+        }
+    }
+
+    function removeItemByName(name) {
+        const index = items.findIndex(item => item.name === name && item.isBag);
+        if (index !== -1) {
+            items.splice(index, 1);
+            saveItems();
         }
     }
 
@@ -104,6 +117,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target.classList.contains("delete-btn")) {
             const index = e.target.dataset.index;
             if (confirm("คุณต้องการลบรายการนี้หรือไม่?")) {
+                // If it's a bag item, also uncheck the bag option
+                if (items[index].isBag) {
+                    const bagName = items[index].name;
+                    selectedBags = selectedBags.filter(bag => bag !== bagName);
+                    saveSelectedBags();
+                    // Update checkbox state
+                    const checkbox = document.querySelector(`input[value="${bagName}"]`);
+                    if (checkbox) {
+                        checkbox.checked = false;
+                    }
+                }
                 items.splice(index, 1);
                 saveItems();
             }
@@ -180,22 +204,65 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 3000);
     }
 
-    // Bag options
-    const bagSizes = [
-        "ถุงหิ้ว 12*20", "ถุงหิ้ว 8*16", "ถุงหิ้ว 7*15",
-        "ถุงร้อน 14*12", "ถุงร้อน 3*5", "ถุงร้อน 4/5*7", "ถุงร้อน 6*11"
+    // Bag options - ถุงหิ้ว
+    const bagHiwSizes = [
+        "ถุงหิ้ว 7*15",
+        "ถุงหิ้ว 8*16",
+        "ถุงหิ้ว 12*20"
     ];
 
-    bagSizes.forEach(bag => {
-        const button = document.createElement("button");
-        button.className = "bag-btn";
-        button.textContent = bag;
-        button.addEventListener("click", () => {
-            addItem(bag);
-            showToast(`เพิ่ม "${bag}" แล้ว`);
+    // Bag options - ถุงร้อน
+    const bagHotSizes = [
+        "ถุงร้อน 3*5",
+        "ถุงร้อน 4/5*7",
+        "ถุงร้อน 6*11",
+        "ถุงร้อน 14*12"
+    ];
+
+    function createBagOption(bagName, container) {
+        const option = document.createElement("div");
+        option.className = "bag-option";
+        
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = `bag-${bagName.replace(/[*\/\s]/g, "-")}`;
+        checkbox.value = bagName;
+        
+        // Check if this bag is already in the list
+        const isInList = items.some(item => item.name === bagName && item.isBag);
+        if (isInList) {
+            checkbox.checked = true;
+            if (!selectedBags.includes(bagName)) {
+                selectedBags.push(bagName);
+            }
+        }
+        
+        checkbox.addEventListener("change", (e) => {
+            if (e.target.checked) {
+                addItem(bagName, true);
+                selectedBags.push(bagName);
+                saveSelectedBags();
+                showToast(`เพิ่ม "${bagName}" แล้ว`);
+            } else {
+                removeItemByName(bagName);
+                selectedBags = selectedBags.filter(bag => bag !== bagName);
+                saveSelectedBags();
+                showToast(`ลบ "${bagName}" แล้ว`);
+            }
         });
-        bagOptionsDiv.appendChild(button);
-    });
+        
+        const card = document.createElement("label");
+        card.className = "bag-card";
+        card.htmlFor = checkbox.id;
+        card.textContent = bagName.replace("ถุงหิ้ว ", "").replace("ถุงร้อน ", "");
+        
+        option.appendChild(checkbox);
+        option.appendChild(card);
+        container.appendChild(option);
+    }
+
+    bagHiwSizes.forEach(bag => createBagOption(bag, bagHiwOptionsDiv));
+    bagHotSizes.forEach(bag => createBagOption(bag, bagHotOptionsDiv));
 
     renderItems();
 });
