@@ -38,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveItems() {
         localStorage.setItem("marketListItems", JSON.stringify(items));
         renderItems();
+        setTimeout(() => {
+            initializeBagOptions();
+        }, 50);
     }
 
     function saveSelectedBags() {
@@ -46,6 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderItems() {
         shoppingList.innerHTML = "";
+        
+        // Find the index of "สีผสมอาหาร"
+        const colorFoodIndex = items.findIndex(item => item.name === "สีผสมอาหาร");
+        
         items.forEach((item, index) => {
             const li = document.createElement("li");
             li.className = item.checked ? "checked" : "";
@@ -58,6 +65,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
             shoppingList.appendChild(li);
+            
+            // Insert bag sections after "สีผสมอาหาร"
+            if (index === colorFoodIndex) {
+                // Create bag sections container
+                const bagSectionsLi = document.createElement("li");
+                bagSectionsLi.className = "bag-sections-container";
+                bagSectionsLi.style.borderBottom = "none";
+                bagSectionsLi.style.display = "block";
+                bagSectionsLi.style.padding = "20px 10px";
+                
+                const bagSectionsDiv = document.createElement("div");
+                bagSectionsDiv.innerHTML = `
+                    <h2 style="color: #555; margin: 0 0 15px 0; font-size: 18px;">ขนาดถุงหิ้ว</h2>
+                    <div class="bag-options" id="bagHiwOptionsInline"></div>
+                    <h2 style="color: #555; margin: 25px 0 15px 0; font-size: 18px;">ขนาดถุงร้อน</h2>
+                    <div class="bag-options" id="bagHotOptionsInline"></div>
+                `;
+                
+                bagSectionsLi.appendChild(bagSectionsDiv);
+                shoppingList.appendChild(bagSectionsLi);
+            }
         });
     }
 
@@ -219,13 +247,28 @@ document.addEventListener("DOMContentLoaded", () => {
         "ถุงร้อน 14*12"
     ];
 
+    function initializeBagOptions() {
+        const bagHiwOptionsInline = document.getElementById("bagHiwOptionsInline");
+        const bagHotOptionsInline = document.getElementById("bagHotOptionsInline");
+        
+        if (bagHiwOptionsInline) {
+            bagHiwOptionsInline.innerHTML = "";
+            bagHiwSizes.forEach(bag => createBagOption(bag, bagHiwOptionsInline));
+        }
+        
+        if (bagHotOptionsInline) {
+            bagHotOptionsInline.innerHTML = "";
+            bagHotSizes.forEach(bag => createBagOption(bag, bagHotOptionsInline));
+        }
+    }
+
     function createBagOption(bagName, container) {
         const option = document.createElement("div");
         option.className = "bag-option";
         
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.id = `bag-${bagName.replace(/[*\/\s]/g, "-")}`;
+        checkbox.id = `bag-${bagName.replace(/[*\/\s]/g, "-")}-inline`;
         checkbox.value = bagName;
         
         // Check if this bag is already in the list
@@ -261,8 +304,10 @@ document.addEventListener("DOMContentLoaded", () => {
         container.appendChild(option);
     }
 
-    bagHiwSizes.forEach(bag => createBagOption(bag, bagHiwOptionsDiv));
-    bagHotSizes.forEach(bag => createBagOption(bag, bagHotOptionsDiv));
-
     renderItems();
+    
+    // Initialize bag options after rendering items
+    setTimeout(() => {
+        initializeBagOptions();
+    }, 100);
 });
